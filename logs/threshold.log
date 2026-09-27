@@ -1,0 +1,44 @@
+[threshold] loading model...
+[threshold] scoring val candidates...
+[threshold] val candidates: 20,069,688  val S1 entities: 442,191  (688.3s elapsed)
+[threshold] sweeping thresholds...
+  threshold=0.05  macro_F0.5=0.69163
+  threshold=0.10  macro_F0.5=0.70207
+  threshold=0.15  macro_F0.5=0.70822
+  threshold=0.20  macro_F0.5=0.71291
+  threshold=0.25  macro_F0.5=0.71737
+  threshold=0.30  macro_F0.5=0.72147
+  threshold=0.35  macro_F0.5=0.72547
+  threshold=0.40  macro_F0.5=0.72937
+  threshold=0.45  macro_F0.5=0.73346
+  threshold=0.50  macro_F0.5=0.73755
+  threshold=0.55  macro_F0.5=0.74170
+  threshold=0.60  macro_F0.5=0.74601
+  threshold=0.65  macro_F0.5=0.75040
+  threshold=0.70  macro_F0.5=0.75503
+  threshold=0.75  macro_F0.5=0.76015
+  threshold=0.80  macro_F0.5=0.76989
+  threshold=0.85  macro_F0.5=0.77858
+  threshold=0.90  macro_F0.5=0.78648
+  threshold=0.91  macro_F0.5=0.78730
+  threshold=0.91  macro_F0.5=0.78900
+  threshold=0.92  macro_F0.5=0.79007
+  threshold=0.92  macro_F0.5=0.79149
+  threshold=0.93  macro_F0.5=0.79218
+  threshold=0.93  macro_F0.5=0.79304
+  threshold=0.94  macro_F0.5=0.79370
+  threshold=0.94  macro_F0.5=0.79431
+  threshold=0.94  macro_F0.5=0.79500
+  threshold=0.95  macro_F0.5=0.79549
+  threshold=0.95  macro_F0.5=0.79593
+  threshold=0.96  macro_F0.5=0.79620
+  threshold=0.96  macro_F0.5=0.79618
+  threshold=0.97  macro_F0.5=0.79583
+  threshold=0.97  macro_F0.5=0.79464
+  threshold=0.98  macro_F0.5=0.79259
+  threshold=0.98  macro_F0.5=0.78827
+  threshold=0.99  macro_F0.5=0.77931
+  threshold=0.99  macro_F0.5=0.75429
+
+[threshold] BEST threshold=0.960  macro_F0.5=0.79620  (715.2s total)
+[threshold] sweep saved -> /Users/shreyas/Developer/amazon-ml/student_resource/experiments/threshold_sweep.csv

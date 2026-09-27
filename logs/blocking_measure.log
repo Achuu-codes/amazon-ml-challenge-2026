@@ -1,0 +1,31 @@
+[blocking] preparing train tables (s1 restricted to 'val')...
+S1 in val: 442,191  true pairs: 1,530,467
+
+--- S2 ---
+  exact_name_s2                    candidates=    1,331,269 avg/S1=    3.01 recall= 10.100% time=0.8s
+  exact_translit_s2                candidates=    1,460,593 avg/S1=    3.30 recall= 11.894% time=0.7s
+  rare_name_token_s2               candidates=    2,930,794 avg/S1=    6.63 recall=  9.756% time=0.5s
+  rare_translit_token_s2           candidates=    2,905,513 avg/S1=    6.57 recall=  9.765% time=0.5s
+  name_token_plus_number_s2        candidates=   15,971,940 avg/S1=   36.12 recall= 28.377% time=1.9s
+
+--- S3 ---
+  exact_name_s3                    candidates=    1,527,616 avg/S1=    3.45 recall= 11.141% time=0.7s
+  exact_translit_s3                candidates=    1,690,581 avg/S1=    3.82 recall= 13.151% time=0.7s
+  rare_name_token_s3               candidates=    2,824,464 avg/S1=    6.39 recall= 10.004% time=0.6s
+  rare_translit_token_s3           candidates=    2,799,609 avg/S1=    6.33 recall= 10.013% time=0.6s
+  name_token_plus_number_s3        candidates=   16,235,549 avg/S1=   36.72 recall= 31.921% time=1.9s
+
+--- UNION (incremental) ---
+  +exact_name_s2                    total_candidates=    1,331,269 recall= 10.100% avg/S1=3.01
+  +exact_translit_s2                total_candidates=    1,512,147 recall= 11.922% avg/S1=3.42
+  +rare_name_token_s2               total_candidates=    4,379,918 recall= 18.742% avg/S1=9.91
+  +rare_translit_token_s2           total_candidates=    4,403,835 recall= 18.770% avg/S1=9.96
+  +name_token_plus_number_s2        total_candidates=   20,123,016 recall= 33.823% avg/S1=45.51
+  +exact_name_s3                    total_candidates=   21,650,632 recall= 44.963% avg/S1=48.96
+  +exact_translit_s3                total_candidates=   21,867,917 recall= 47.004% avg/S1=49.45
+  +rare_name_token_s3               total_candidates=   24,627,696 recall= 53.969% avg/S1=55.69
+  +rare_translit_token_s3           total_candidates=   24,651,448 recall= 53.998% avg/S1=55.75
+  +name_token_plus_number_s3        total_candidates=   40,619,530 recall= 71.495% avg/S1=91.86
+
+Final union: P95 candidates/S1=336 max=2,841
+Entity-level recall (>=1 true match retained): 383,146/417,327 = 91.810%

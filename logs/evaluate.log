@@ -1,0 +1,24 @@
+[evaluate] loading model + threshold...
+
+=== VALIDATION SUMMARY (macro F0.5) ===
+Overall:              0.79620  (n=442,191)
+
+By country:
+            mean   count
+country                 
+India    0.69769  177355
+US       0.86217  264836
+
+By singleton vs matched:
+                  mean   count
+is_singleton                  
+False         0.790156  417327
+True          0.897643   24864
+
+[evaluate] per-entity scores -> /Users/shreyas/Developer/amazon-ml/student_resource/experiments/validation_summary.csv
+[evaluate] false_positives: 25 examples -> /Users/shreyas/Developer/amazon-ml/student_resource/experiments/error_false_positives.csv
+[evaluate] false_negatives_scored: 25 examples -> /Users/shreyas/Developer/amazon-ml/student_resource/experiments/error_false_negatives_scored.csv
+[evaluate] low_confidence_true_positives: 25 examples -> /Users/shreyas/Developer/amazon-ml/student_resource/experiments/error_low_confidence_true_positives.csv
+[evaluate] high_confidence_false_positives: 25 examples -> /Users/shreyas/Developer/amazon-ml/student_resource/experiments/error_high_confidence_false_positives.csv
+
+[evaluate] val S1 entities with true matches but ZERO candidates: 8,509 / 417,327 matched entities

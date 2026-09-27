@@ -1,0 +1,16 @@
+[blocking] preparing test tables...
+--- S2 ---
+  exact_name_s2                    candidates=    3,184,157 avg/S1=    1.84 time=0.7s
+  exact_translit_s2                candidates=    3,539,064 avg/S1=    2.04 time=2.1s
+  rare_name_token_s2               candidates=   13,103,953 avg/S1=    7.56 time=1.2s
+  rare_translit_token_s2           candidates=   13,047,732 avg/S1=    7.53 time=1.4s
+  name_token_plus_number_s2        candidates=   25,023,383 avg/S1=   14.44 time=3.9s
+--- S3 ---
+  exact_name_s3                    candidates=    4,090,309 avg/S1=    2.36 time=2.0s
+  exact_translit_s3                candidates=    4,597,025 avg/S1=    2.65 time=1.9s
+  rare_name_token_s3               candidates=   12,938,525 avg/S1=    7.47 time=1.6s
+  rare_translit_token_s3           candidates=   12,880,331 avg/S1=    7.43 time=2.0s
+  name_token_plus_number_s3        candidates=   25,249,896 avg/S1=   14.57 time=3.8s
+--- UNION ---
+Total candidate pairs: 82,133,918  avg/S1=47.41
+-> /Users/shreyas/Developer/amazon-ml/student_resource/data/processed/test_candidates.parquet

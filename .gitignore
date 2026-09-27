@@ -1,0 +1,14 @@
+# Raw challenge data and large derived/regenerable artifacts — not pushed
+# to GitHub (too large, and the raw dataset shouldn't be redistributed).
+# Regenerate everything with: python3 run_pipeline.py
+dataset/
+data/
+features/
+output/candidate_pairs.tsv
+
+# Python
+__pycache__/
+*.pyc
+
+# OS
+.DS_Store
