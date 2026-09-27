@@ -1,53 +1,66 @@
 /Users/shreyas/.pyenv/versions/3.12.13/lib/python3.12/site-packages/lightgbm/sklearn.py:1106: LGBMDeprecationWarning: The argument 'eval_set' is deprecated, use 'eval_X' and 'eval_y' instead.
   eval_set = _validate_eval_set_Xy(eval_set=eval_set, eval_X=eval_X, eval_y=eval_y)
-[train] hard-negative pool=73,266,328 target=35,292,600 sample_rate=0.4817
-[train] train-split positives=4,265,553 hard-negatives=35,285,043 ratio=1:8.3
-[train] training frame: 39,550,596 rows (38.0s elapsed)
-[train] fit=35,597,993 dev=3,952,603 pos_rate_fit=0.1078
-[LightGBM] [Info] Number of positive: 3838800, number of negative: 31759193
-[LightGBM] [Info] Auto-choosing row-wise multi-threading, the overhead of testing was 0.416183 seconds.
+[train] negative shard 1/8 done
+[train] negative shard 2/8 done
+[train] negative shard 3/8 done
+[train] negative shard 4/8 done
+[train] negative shard 5/8 done
+[train] negative shard 6/8 done
+[train] negative shard 7/8 done
+[train] negative shard 8/8 done
+[train] train-split positives=4,828,129 hard-negatives=27,866,029 ratio=1:5.8
+[train] training frame: 32,694,158 rows (99.8s elapsed)
+[train] fit=29,420,632 dev=3,273,526 pos_rate_fit=0.1477
+[LightGBM] [Info] Number of positive: 4345209, number of negative: 25075423
+[LightGBM] [Info] Auto-choosing row-wise multi-threading, the overhead of testing was 0.371935 seconds.
 You can set `force_row_wise=true` to remove the overhead.
 And if memory is not enough, you can set `force_col_wise=true`.
-[LightGBM] [Info] Total Bins 2498
-[LightGBM] [Info] Number of data points in the train set: 35597993, number of used features: 22
-[LightGBM] [Info] [binary:BoostFromScore]: pavg=0.107838 -> initscore=-2.113022
-[LightGBM] [Info] Start training from score -2.113022
+[LightGBM] [Info] Total Bins 2726
+[LightGBM] [Info] Number of data points in the train set: 29420632, number of used features: 23
+[LightGBM] [Info] [binary:BoostFromScore]: pavg=0.147693 -> initscore=-1.752814
+[LightGBM] [Info] Start training from score -1.752814
 Training until validation scores don't improve for 50 rounds
-[50]	valid_0's average_precision: 0.99029	valid_0's binary_logloss: 0.0430087
-[100]	valid_0's average_precision: 0.993281	valid_0's binary_logloss: 0.0321601
-[150]	valid_0's average_precision: 0.994988	valid_0's binary_logloss: 0.0291869
-[200]	valid_0's average_precision: 0.995631	valid_0's binary_logloss: 0.0275703
-[250]	valid_0's average_precision: 0.995959	valid_0's binary_logloss: 0.0265978
-[300]	valid_0's average_precision: 0.996132	valid_0's binary_logloss: 0.0260147
-[350]	valid_0's average_precision: 0.996013	valid_0's binary_logloss: 0.0257314
+[50]	valid_0's average_precision: 0.978293	valid_0's binary_logloss: 0.0875567
+[100]	valid_0's average_precision: 0.98423	valid_0's binary_logloss: 0.0705805
+[150]	valid_0's average_precision: 0.987438	valid_0's binary_logloss: 0.0631858
+[200]	valid_0's average_precision: 0.98906	valid_0's binary_logloss: 0.0589439
+[250]	valid_0's average_precision: 0.990036	valid_0's binary_logloss: 0.0563523
+[300]	valid_0's average_precision: 0.990654	valid_0's binary_logloss: 0.0545662
+[350]	valid_0's average_precision: 0.991067	valid_0's binary_logloss: 0.0533182
+[400]	valid_0's average_precision: 0.991373	valid_0's binary_logloss: 0.0523486
+[450]	valid_0's average_precision: 0.991648	valid_0's binary_logloss: 0.0514651
+[500]	valid_0's average_precision: 0.991882	valid_0's binary_logloss: 0.05071
+[550]	valid_0's average_precision: 0.991945	valid_0's binary_logloss: 0.0501472
+[600]	valid_0's average_precision: 0.992026	valid_0's binary_logloss: 0.0496738
 Early stopping, best iteration is:
-[314]	valid_0's average_precision: 0.996179	valid_0's binary_logloss: 0.0258907
+[599]	valid_0's average_precision: 0.992152	valid_0's binary_logloss: 0.0496164
 
 [train] feature importance (gain-normalized split count):
-addr_token_jaccard       1967
-name_token_jaccard       1965
-addr_token_set_ratio     1772
-name_translit_ratio      1646
-name_token_set_ratio     1446
-addr_common_tokens       1400
-name_len_diff            1303
-name_token_sort_ratio    1135
-addr_len_ratio           1031
-name_len_ratio            958
-name_common_tokens        925
-name_ratio                824
-addr_len_diff             804
-addr_ratio                772
-shared_numeric_count      695
-is_source3                530
-country_equal             117
-shared_numeric_bool       115
-name_translit_exact        46
-name_exact                 13
-cand_addr_missing           4
-addr_exact                  0
+name_token_jaccard       3513
+name_jaro_winkler        3300
+addr_token_jaccard       2936
+name_token_set_ratio     2907
+addr_token_set_ratio     2861
+name_len_diff            2508
+name_translit_ratio      2295
+addr_common_tokens       2196
+name_token_sort_ratio    2037
+addr_len_ratio           1975
+name_len_ratio           1944
+name_ratio               1887
+addr_ratio               1597
+addr_len_diff            1579
+name_common_tokens       1272
+shared_numeric_count     1121
+is_source3                776
+shared_numeric_bool       223
+country_equal             107
+name_translit_exact        87
+cand_addr_missing          14
+addr_exact                  2
+name_exact                  1
 s1_name_missing             0
 cand_name_missing           0
 s1_addr_missing             0
 
-[train] saved -> /Users/shreyas/Developer/amazon-ml/student_resource/models/lgbm_matcher.txt (371.0s total)
+[train] saved -> /Users/shreyas/Developer/amazon-ml/student_resource/models/lgbm_matcher.txt (423.7s total)

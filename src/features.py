@@ -29,6 +29,7 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 from rapidfuzz import fuzz
+from rapidfuzz.distance import JaroWinkler
 
 from src import config
 
@@ -81,6 +82,7 @@ def compute_features(merged: pd.DataFrame) -> pd.DataFrame:
     name_ratio = np.empty(n, dtype=np.float32)
     name_token_sort = np.empty(n, dtype=np.float32)
     name_token_set = np.empty(n, dtype=np.float32)
+    name_jaro_winkler = np.empty(n, dtype=np.float32)
     translit_ratio = np.empty(n, dtype=np.float32)
     addr_ratio = np.empty(n, dtype=np.float32)
     addr_token_set = np.empty(n, dtype=np.float32)
@@ -115,8 +117,9 @@ def compute_features(merged: pd.DataFrame) -> pd.DataFrame:
             name_ratio[i] = fuzz.ratio(an, bn)
             name_token_sort[i] = fuzz.token_sort_ratio(an, bn)
             name_token_set[i] = fuzz.token_set_ratio(an, bn)
+            name_jaro_winkler[i] = JaroWinkler.normalized_similarity(an, bn) * 100
         else:
-            name_ratio[i] = name_token_sort[i] = name_token_set[i] = 0.0
+            name_ratio[i] = name_token_sort[i] = name_token_set[i] = name_jaro_winkler[i] = 0.0
 
         translit_ratio[i] = fuzz.ratio(at, bt) if (at and bt) else 0.0
 
@@ -162,6 +165,7 @@ def compute_features(merged: pd.DataFrame) -> pd.DataFrame:
         "name_ratio": name_ratio,
         "name_token_sort_ratio": name_token_sort,
         "name_token_set_ratio": name_token_set,
+        "name_jaro_winkler": name_jaro_winkler,
         "name_translit_ratio": translit_ratio,
         "addr_ratio": addr_ratio,
         "addr_token_set_ratio": addr_token_set,

@@ -36,14 +36,27 @@ MIN_COMPOUND_TOKEN_LEN = 4  # compound blocks additionally require longer
                              # tokens than the base MIN_TOKEN_LEN=3 — short
                              # tokens combined with a number/word are still
                              # too common to be discriminative evidence
+ADDR_WORD_PREFILTER = 1500  # address words touching more source rows than
+                             # this are dropped BEFORE the name x addr-word
+                             # cross join, not after — this is what makes
+                             # the name+address-word compound block (which
+                             # previously OOM'd building its unfiltered pair
+                             # table) tractable at full scale
+COMPOUND_RARE_MAX_ADDRWORD = 20  # tighter cap than COMPOUND_RARE_MAX: even
+                                  # after prefiltering, name+addrword keys
+                                  # have far more combinations per record
+                                  # than name+number, so cap the survivors
+                                  # more aggressively
+N_UNION_SHARDS = 6  # final cross-block dedup is sharded by hash(s1_id) to
+                     # bound memory (see generate_candidates)
 EXACT_NAME_MAX = 1000    # cap even "exact name match" buckets: a single
                           # hyper-common business name should not explode
 
 
 def connect():
     con = duckdb.connect()
-    con.execute("SET memory_limit='12GB'")
-    con.execute("SET threads=6")
+    con.execute("SET memory_limit='13GB'")
+    con.execute("SET threads=4")
     con.execute("SET preserve_insertion_order=false")
     con.execute(f"SET temp_directory='{config.DATA}/duckdb_tmp'")
     return con
@@ -91,13 +104,6 @@ def build_indexes(con, split, source):
     # filtering after (e.g. with QUALIFY) materializes the full, often huge,
     # cross product first and reliably runs out of memory at full scale.
     #
-    # A name+address-WORD version (and a two-distinct-name-token version)
-    # were also tried: both blow the memory budget even just building their
-    # frequency table at full scale (many more distinct address words than
-    # numbers per entity — matches the "candidate explosion" CLAUDE.md
-    # already flagged for this block type) while adding little incremental
-    # recall over the cheap blocks + this one. Dropped; see
-    # logs/blocking_measure.log.
     con.execute(f"""
         CREATE OR REPLACE TABLE {base}_name_num_pairs AS
         SELECT DISTINCT t.entity_id, t.token || '|' || n.token AS key
@@ -110,6 +116,32 @@ def build_indexes(con, split, source):
         SELECT key, COUNT(*) AS freq FROM {base}_name_num_pairs GROUP BY key
     """)
     con.execute(f"CREATE INDEX IF NOT EXISTS idx_{base}_name_num ON {base}_name_num_pairs(key)")
+
+    # name-token + address-WORD compound. Earlier attempt blew memory
+    # building the full (unfiltered) cross product before any capping — the
+    # fix is to pre-filter address words to reasonably rare ones (doc-freq
+    # <= ADDR_WORD_PREFILTER) BEFORE the cross join, shrinking the fanout
+    # from the start rather than trying to shrink it after.
+    con.execute(f"""
+        CREATE OR REPLACE TABLE {base}_addr_word_rare AS
+        SELECT a.entity_id, a.token
+        FROM {base}_addr_tok a
+        JOIN {base}_addr_tok_freq f ON f.token = a.token AND f.freq <= {ADDR_WORD_PREFILTER}
+        WHERE length(a.token) >= {MIN_COMPOUND_TOKEN_LEN}
+    """)
+    con.execute(f"""
+        CREATE OR REPLACE TABLE {base}_name_addrword_pairs AS
+        SELECT DISTINCT t.entity_id, t.token || '|' || w.token AS key
+        FROM {base}_name_tok t
+        JOIN {base}_addr_word_rare w ON w.entity_id = t.entity_id
+        WHERE length(t.token) >= {MIN_COMPOUND_TOKEN_LEN}
+    """)
+    con.execute(f"""
+        CREATE OR REPLACE TABLE {base}_name_addrword_freq AS
+        SELECT key, COUNT(*) AS freq FROM {base}_name_addrword_pairs GROUP BY key
+    """)
+    con.execute(f"CREATE INDEX IF NOT EXISTS idx_{base}_name_addrword ON {base}_name_addrword_pairs(key)")
+    con.execute(f"DROP TABLE {base}_addr_word_rare")
 
 
 def prepare(con, split, s1_only_split=None):
@@ -199,17 +231,17 @@ def block_rare_translit_token(split, source):
     """
 
 
-def _compound_block(key_name):
+def _compound_block(key_name, cap=COMPOUND_RARE_MAX):
     """A generic compound-key block: join on a precomputed, frequency-capped
-    2-field key (see build_indexes). Used for name+number, name+addr-word,
-    and two-distinct-name-token blocks."""
+    2-field key (see build_indexes). Used for name+number and
+    name+addr-word blocks."""
 
     def block(split, source):
         base = f"{split}_{source}"
         return f"""
             SELECT DISTINCT s1p.entity_id AS s1_id, bp.entity_id AS candidate_id
             FROM {split}_s1_{key_name}_pairs s1p
-            JOIN {base}_{key_name}_freq f ON f.key = s1p.key AND f.freq <= {COMPOUND_RARE_MAX}
+            JOIN {base}_{key_name}_freq f ON f.key = s1p.key AND f.freq <= {cap}
             JOIN {base}_{key_name}_pairs bp ON bp.key = s1p.key
         """
 
@@ -217,6 +249,7 @@ def _compound_block(key_name):
 
 
 block_name_token_plus_number = _compound_block("name_num")
+block_name_token_plus_addr_word = _compound_block("name_addrword", cap=COMPOUND_RARE_MAX_ADDRWORD)
 
 
 BLOCKS = [
@@ -225,6 +258,7 @@ BLOCKS = [
     ("rare_name_token", block_rare_name_token),
     ("rare_translit_token", block_rare_translit_token),
     ("name_token_plus_number", block_name_token_plus_number),
+    ("name_token_plus_addr_word", block_name_token_plus_addr_word),
 ]
 
 
@@ -338,9 +372,24 @@ def generate_candidates(split):
             run_block(con, full_name, fn(split, source), s1_count, true_count)
             block_names.append(full_name)
 
-    print("--- UNION ---")
-    union_sql = "\nUNION\n".join(f"SELECT * FROM block_{bn}" for bn in block_names)
-    con.execute(f"CREATE OR REPLACE TABLE all_candidates AS {union_sql}")
+    print("--- UNION (sharded dedup) ---")
+    # A single global UNION (implies DISTINCT) over ~100M+ raw rows reliably
+    # exceeds the memory budget — same fix as the negative-sampling window
+    # function: shard by hash(s1_id) so each dedup pass only ever sees
+    # ~1/N_UNION_SHARDS of the rows.
+    con.execute("DROP TABLE IF EXISTS all_candidates")
+    for k in range(N_UNION_SHARDS):
+        shard_sql = "\nUNION\n".join(
+            f"SELECT * FROM block_{bn} WHERE abs(hash(s1_id)) % {N_UNION_SHARDS} = {k}"
+            for bn in block_names
+        )
+        con.execute(f"CREATE OR REPLACE TEMP TABLE union_shard AS {shard_sql}")
+        if k == 0:
+            con.execute("CREATE TABLE all_candidates AS SELECT * FROM union_shard")
+        else:
+            con.execute("INSERT INTO all_candidates SELECT * FROM union_shard")
+        con.execute("DROP TABLE union_shard")
+    print(f"  union done across {N_UNION_SHARDS} shards")
 
     total = con.execute("SELECT COUNT(*) FROM all_candidates").fetchone()[0]
     print(f"Total candidate pairs: {total:,}  avg/S1={total/s1_count:.2f}")

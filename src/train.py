@@ -35,7 +35,7 @@ DEV_FRACTION = 0.1  # slice of the TRAIN-split S1 entities held out for
                      # entirely for threshold selection (src.threshold).
 
 FEATURE_COLS = [
-    "name_ratio", "name_token_sort_ratio", "name_token_set_ratio",
+    "name_ratio", "name_token_sort_ratio", "name_token_set_ratio", "name_jaro_winkler",
     "name_translit_ratio",
     "addr_ratio", "addr_token_set_ratio",
     "name_exact", "name_translit_exact", "addr_exact",
@@ -76,36 +76,40 @@ def build_labeled_view(con, feat_path, gt_path):
     """)
 
 
+N_NEG_SHARDS = 8  # negatives are ranked per-S1 in shards (hash(s1_id) % N)
+                   # rather than one global window function — the global
+                   # version (~80M rows partitioned+sorted) reliably hit
+                   # DuckDB's memory ceiling even with disk-spill configured.
+                   # Sharding bounds each window op to ~1/N of the rows.
+
+
 def extract_train_pos_neg(con, gt_path):
     con.execute("CREATE OR REPLACE TABLE train_pos AS SELECT * FROM labeled WHERE split='train' AND label=1")
     n_pos = con.execute("SELECT COUNT(*) FROM train_pos").fetchone()[0]
-    n_train_s1 = con.execute(f"""
-        SELECT COUNT(*) FROM read_parquet('{gt_path}') WHERE split='train'
-    """).fetchone()[0]
 
-    # A per-S1 ROW_NUMBER()-ranked top-K (exact hardest negatives) reliably
-    # hits DuckDB's memory ceiling at this scale even with disk-spill
-    # configured (~80M rows partitioned+sorted). Instead: bias toward hard
-    # negatives with a cheap similarity floor (blocking already guarantees
-    # some token/number overlap, so even "easy" blocked negatives are harder
-    # than random pairs), then randomly subsample to a target ratio — a
-    # filter + random() is a single streaming pass, no large sort buffer.
-    target_total = n_train_s1 * NEG_PER_S1
-    n_candidates = con.execute("""
-        SELECT COUNT(*) FROM labeled
-        WHERE split='train' AND label=0
-          AND (name_ratio >= 40 OR addr_ratio >= 40 OR shared_numeric_bool = 1)
-    """).fetchone()[0]
-    sample_rate = min(1.0, target_total / max(n_candidates, 1))
-    print(f"[train] hard-negative pool={n_candidates:,} target={target_total:,} sample_rate={sample_rate:.4f}")
+    # True hardest-negatives (top-NEG_PER_S1 by similarity, per S1), not an
+    # approximation — sharded so each ROW_NUMBER() window only ever sees
+    # ~1/N_NEG_SHARDS of the train-split negatives at once.
+    con.execute("DROP TABLE IF EXISTS train_neg")
+    for k in range(N_NEG_SHARDS):
+        con.execute(f"""
+            CREATE TEMP TABLE shard_neg AS
+            SELECT * EXCLUDE (rn) FROM (
+                SELECT *, ROW_NUMBER() OVER (
+                    PARTITION BY s1_id
+                    ORDER BY (name_ratio + name_translit_ratio + addr_ratio + name_jaro_winkler) DESC
+                ) AS rn
+                FROM labeled
+                WHERE split='train' AND label=0 AND abs(hash(s1_id)) % {N_NEG_SHARDS} = {k}
+            ) WHERE rn <= {NEG_PER_S1}
+        """)
+        if k == 0:
+            con.execute("CREATE TABLE train_neg AS SELECT * FROM shard_neg")
+        else:
+            con.execute("INSERT INTO train_neg SELECT * FROM shard_neg")
+        con.execute("DROP TABLE shard_neg")
+        print(f"[train] negative shard {k+1}/{N_NEG_SHARDS} done")
 
-    con.execute(f"""
-        CREATE OR REPLACE TABLE train_neg AS
-        SELECT * FROM labeled
-        WHERE split='train' AND label=0
-          AND (name_ratio >= 40 OR addr_ratio >= 40 OR shared_numeric_bool = 1)
-          AND random() < {sample_rate}
-    """)
     n_neg = con.execute("SELECT COUNT(*) FROM train_neg").fetchone()[0]
     print(f"[train] train-split positives={n_pos:,} hard-negatives={n_neg:,} ratio=1:{n_neg/n_pos:.1f}")
     df = con.execute("SELECT * FROM train_pos UNION ALL SELECT * FROM train_neg").df()
